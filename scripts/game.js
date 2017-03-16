@@ -22,7 +22,7 @@ function init() {
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
 
 	scene = new THREE.Scene();
-	scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+	scene.fog = new THREE.Fog( 'green', 0, 750 );
 
 
   // light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
@@ -74,37 +74,44 @@ function init() {
 
   (function() { // FLOOR
 
-    // loader.crossOrigin('anonymous');
-    // loader.load(
-    // 	// resource URL
-    // 	'./images/grass-pattern.jpg',
-    // 	// Function when resource is loaded
-    // 	function ( texture ) {
-    // 		// do something with the texture
-    // 		var material = new THREE.MeshBasicMaterial( {
-    // 			map: texture
-    // 		} );
-    // 	},
-    // 	// Function called when download progresses
-    // 	function ( xhr ) {
-    // 		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-    // 	},
-    // 	// Function called when download errors
-    // 	function ( xhr ) {
-    // 		console.log( 'An error happened' );
-    // 	}
-    // );
+    loader.crossOrigin = 'anonymous';
+    loader.load(
+    	// resource URL
+    	'https://raw.githubusercontent.com/jeromeetienne/threex.grassground/master/images/grasslight-big.jpg',
+    	// Function when resource is loaded
+    	function ( texture ) {
 
-    geometry = new THREE.PlaneGeometry( 2000, 2000, 40, 40 );
-    geometry.rotateX( - Math.PI / 2 );
-    material = new THREE.MeshBasicMaterial( {color: 0x3C620D} );
-    floor = new THREE.Mesh( geometry, material );
-    scene.add( floor );
+        texture.wrapS	= THREE.RepeatWrapping;
+      	texture.wrapT	= THREE.RepeatWrapping;
+      	texture.repeat.x= 10;
+      	texture.repeat.y= 10;
+      	texture.anisotropy = renderer.getMaxAnisotropy();
+    		// do something with the texture
+    		material = new THREE.MeshBasicMaterial( {
+          emissive: 'green',
+    			map: texture
+    		} );
+        geometry = new THREE.PlaneGeometry( 2000, 2000 );
+        geometry.rotateX(- Math.PI / 2);
+        floor = new THREE.Mesh( geometry, material );
+        scene.add( floor );
+    	},
+    	// Function called when download progresses
+    	function ( xhr ) {
+    		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+    	},
+    	// Function called when download errors
+    	function ( xhr ) {
+    		console.log( 'An error happened' );
+    	}
+    );
 
-    material = new THREE.MeshBasicMaterial( {color: 0x3FFFFFF, wireframe: true} );
-    floor = new THREE.Mesh( geometry, material );
-    floor.position.y = 1;
-    scene.add( floor );
+    // material = new THREE.MeshBasicMaterial( {color: 0x3C620D} );
+
+    // material = new THREE.MeshBasicMaterial( {color: 0x3FFFFFF, wireframe: true} );
+    // floor = new THREE.Mesh( geometry, material );
+    // floor.position.y = 1;
+    // scene.add( floor );
   }());
 
   // POINTER LOCK
@@ -196,7 +203,7 @@ function Zombie(scene) {
   zombie.width = 10;
 
   zombie.spawn = function() {
-    var geometry = new THREE.PlaneGeometry( zombie.width, zombie.height, 0, 0 );
+    var geometry = new THREE.BoxGeometry( zombie.width, zombie.height ,zombie.width);
     var material = new THREE.MeshBasicMaterial( {color: 0x000000} );
     zombie.object = new THREE.Mesh( geometry, material );
     zombie.object.position.z = -40;
