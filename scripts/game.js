@@ -1,5 +1,6 @@
-var scene, camera, renderer, canvas, controls, loader, floor, crosshair, light, raycaster;
+var scene, camera, renderer, canvas, controls, loader, floor, crosshair, light, raycaster, listener;
 var geometry, material;
+var bangSound;
 var isFps;
 var element = document.body;
 var controlsEnabled;
@@ -21,8 +22,13 @@ function init() {
 
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
 
+  listener = new THREE.AudioListener();
+  camera.add( listener );
+
+  bangSound = new THREE.Audio( listener );
+
 	scene = new THREE.Scene();
-	scene.fog = new THREE.Fog( 'green', 0, 750 );
+	scene.fog = new THREE.Fog( '#639628', 0, 750 );
 
 
   // light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
@@ -77,14 +83,14 @@ function init() {
     loader.crossOrigin = 'anonymous';
     loader.load(
     	// resource URL
-    	'https://raw.githubusercontent.com/jeromeetienne/threex.grassground/master/images/grasslight-big.jpg',
+    	'./images/grasslight-small.jpg',
     	// Function when resource is loaded
     	function ( texture ) {
 
         texture.wrapS	= THREE.RepeatWrapping;
       	texture.wrapT	= THREE.RepeatWrapping;
-      	texture.repeat.x= 10;
-      	texture.repeat.y= 10;
+      	texture.repeat.x = 40;
+      	texture.repeat.y = 40;
       	texture.anisotropy = renderer.getMaxAnisotropy();
     		// do something with the texture
     		material = new THREE.MeshBasicMaterial( {
@@ -105,6 +111,13 @@ function init() {
     		console.log( 'An error happened' );
     	}
     );
+
+    var audioLoader = new THREE.AudioLoader();
+
+    //Load a sound and set it as the Audio object's buffer
+    audioLoader.load( 'sounds/distantshot.mp3', function( buffer ) {
+      bangSound.setBuffer( buffer );
+    });
 
     // material = new THREE.MeshBasicMaterial( {color: 0x3C620D} );
 
@@ -234,7 +247,13 @@ function spawnZombie() {
 }
 
 function gunShoot() {
-  console.log(camera);
+
+  if (bangSound.isPlaying) {
+    bangSound.stop();
+  }
+  bangSound.startTime = 0.5;
+  bangSound.play();
+
   raycaster.set( camera.getWorldPosition(), camera.getWorldDirection());
 
 	// calculate objects intersecting the picking ray
@@ -245,6 +264,7 @@ function gunShoot() {
     var intersect = intersects[i];
     if (intersect.object.target instanceof Zombie) {
       intersect.object.target.shoot();
+      break;
     }
 
 	}
