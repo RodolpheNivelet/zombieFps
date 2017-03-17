@@ -4,6 +4,7 @@ const reload = browserSync.reload;
 
 gulp.task('serve', () => {
   browserSync.init({
+    notify: false,
     server: {
         baseDir: './'
     }

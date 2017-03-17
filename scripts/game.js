@@ -25,7 +25,6 @@ function init() {
   listener = new THREE.AudioListener();
   camera.add( listener );
 
-  bangSound = new THREE.Audio( listener );
 
 	scene = new THREE.Scene();
 	scene.fog = new THREE.Fog( '#639628', 0, 750 );
@@ -116,7 +115,7 @@ function init() {
 
     //Load a sound and set it as the Audio object's buffer
     audioLoader.load( 'sounds/distantshot.mp3', function( buffer ) {
-      bangSound.setBuffer( buffer );
+      bangSound = buffer;
     });
 
     // material = new THREE.MeshBasicMaterial( {color: 0x3C620D} );
@@ -145,11 +144,13 @@ function init() {
     }
   }
 
-  document.body.addEventListener('click', function() {
+  document.body.addEventListener('click', function(e) {
     if (!controlsEnabled) {
       initPointerLock();
     } else {
-      gunShoot();
+      if (e.button === 0) {
+        gunShoot();
+      }
     }
   });
 
@@ -248,11 +249,10 @@ function spawnZombie() {
 
 function gunShoot() {
 
-  if (bangSound.isPlaying) {
-    bangSound.stop();
-  }
-  bangSound.startTime = 0.5;
-  bangSound.play();
+  var newSound = new THREE.Audio( listener );
+  newSound.setBuffer(bangSound);
+  newSound.startTime = 0.5;
+  newSound.play();
 
   raycaster.set( camera.getWorldPosition(), camera.getWorldDirection());
 
