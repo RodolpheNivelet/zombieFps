@@ -6,6 +6,11 @@ var element = document.body;
 var controlsEnabled;
 var velocity = new THREE.Vector3();
 
+var config = {
+  zombieH: 12,
+  spawnDist: 600
+};
+
 var prevTime = performance.now();
 var moveForward,
     moveLeft,
@@ -144,7 +149,7 @@ function init() {
     }
   }
 
-  document.body.addEventListener('click', function(e) {
+  document.body.addEventListener('mousedown', function(e) {
     if (!controlsEnabled) {
       initPointerLock();
     } else {
@@ -155,7 +160,7 @@ function init() {
   });
 
   (function() {
-    setInterval(spawnZombie, 5000);
+    setInterval(spawnZombie, 2000);
   }());
 
   // WINDOW RESIZE
@@ -200,9 +205,14 @@ function animate() {
 
 	}
 
+  var camPos = camera.getWorldPosition();
   for (var i = 0; i < zombies.length; i++) {
     var zombie = zombies[i];
-    zombie.object.position.z += 0.1;
+    var speed = zombie.speed;
+    var angleTo = zombie.object.position.angleTo(camPos);
+    var distanceTo = zombie.object.position.distanceTo(camPos);
+    zombie.object.lookAt(new THREE.Vector3(camPos.x, zombie.object.position.y, camPos.z));
+    zombie.object.translateZ(speed);
   }
 
   renderer.render( scene, camera );
@@ -212,32 +222,65 @@ function Zombie(scene) {
 
   var zombie = this;
   zombie.life = 100;
+  zombie.speed = 0.5;
 
-  zombie.height = 20;
-  zombie.width = 10;
+  zombie.height = config.zombieH;
+  zombie.width = config.zombieH/2;
 
   zombie.spawn = function() {
-    var geometry = new THREE.BoxGeometry( zombie.width, zombie.height ,zombie.width);
-    var material = new THREE.MeshBasicMaterial( {color: 0x000000} );
-    zombie.object = new THREE.Mesh( geometry, material );
-    zombie.object.position.z = -40;
-    zombie.object.position.y = zombie.height/2;
+    zombie.object = new THREE.Object3D();
+    material = new THREE.MeshBasicMaterial( {color: 0x000000} );
+
+    var mesure = zombie.height/11;
+
+    geometry = new THREE.BoxGeometry( mesure*2, mesure*4, mesure*2);
+    zombie.lleg = new THREE.Mesh( geometry, material );
+    zombie.rleg = new THREE.Mesh( geometry, material );
+    zombie.lleg.position.x = mesure;
+    zombie.rleg.position.x = -mesure;
+    zombie.lleg.position.y = zombie.lleg.geometry.parameters.height/2;
+    zombie.rleg.position.y = zombie.rleg.geometry.parameters.height/2;
+    zombie.lleg.dmgMtpl = zombie.rleg.dmgMtpl = 0.6;
+
+    zombie.object.add(zombie.lleg);
+    zombie.object.add(zombie.rleg);
+
+    geometry = new THREE.BoxGeometry( mesure*4, mesure*4, mesure*2);
+    zombie.torso = new THREE.Mesh( geometry, material );
+    zombie.torso.position.y = zombie.lleg.geometry.parameters.height + zombie.torso.geometry.parameters.height/2;
+    zombie.object.add(zombie.torso);
+    zombie.torso.dmgMtpl = 1;
+
+    geometry = new THREE.BoxGeometry( mesure*3, mesure*3, mesure*3);
+    zombie.head = new THREE.Mesh( geometry, material );
+    zombie.head.position.y = zombie.lleg.geometry.parameters.height + zombie.torso.geometry.parameters.height + zombie.head.geometry.parameters.height/2;
+    zombie.object.add(zombie.head);
+    zombie.head.dmgMtpl = 2;
+
+    var spawnDist = config.spawnDist;
+    var randomPos = Math.random();
+    var camPos = camera.getWorldPosition();
+    var spawnX = camPos.x + (spawnDist * randomPos * (Math.round(Math.random()) * 2 - 1));
+    var spawnZ = camPos.z + (spawnDist * (1 - randomPos) * (Math.round(Math.random()) * 2 - 1));
+    zombie.object.position.x = spawnX;
+    zombie.object.position.z = spawnZ;
     zombie.object.target = zombie;
     scene.add(zombie.object);
   }
 
-  zombie.shoot = function() {
-    zombie.life -= 20;
-    zombie.updateLife();
-  }
-
-  zombie.updateLife = function() {
-    console.log(zombie.object);
-    zombie.object.material.color.set(0x555555);
+  zombie.shoot = function(gunStrength) {
+    zombie.life -= gunStrength;
+    for (var i = 0; i < zombie.object.children.length; i++) {
+      var zombiePart = zombie.object.children[i];
+      zombiePart.material.color.set(0x555555);
+    }
+    if (zombie.life <= 0) {
+      zombie.die();
+    }
   }
 
   zombie.die = function() {
-
+    scene.remove(scene.getObjectById(zombie.object.id));
   }
 
   zombie.spawn();
@@ -257,18 +300,19 @@ function gunShoot() {
   raycaster.set( camera.getWorldPosition(), camera.getWorldDirection());
 
 	// calculate objects intersecting the picking ray
-	var intersects = raycaster.intersectObjects( scene.children );
+	var intersects = raycaster.intersectObjects( scene.children, true );
 
 	for ( var i = 0; i < intersects.length; i++ ) {
 
     var intersect = intersects[i];
-    if (intersect.object.target instanceof Zombie) {
-      intersect.object.target.shoot();
-      break;
+    if (intersect.object.parent.target instanceof Zombie) {
+      intersect.object.parent.target.shoot(45 * intersect.object.dmgMtpl);
+      // break;
     }
 
 	}
   controls.pitchObject.rotation.x += 0.1;
+  controls.yawObject.rotation.y += 0.1 * (Math.random()-0.5);
 }
 
 function renderedSize() {
