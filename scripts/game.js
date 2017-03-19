@@ -1,4 +1,4 @@
-var scene, camera, renderer, canvas, controls, loader, floor, crosshair, light, raycaster, listener;
+var scene, camera, renderer, canvas, controls, loader, floor, crosshair, light, raycaster, listener, gun;
 var geometry, material;
 var bangSound;
 var isFps;
@@ -115,6 +115,27 @@ function init() {
     		console.log( 'An error happened' );
     	}
     );
+
+    (function() { // GUN
+      'use strict';
+      loader = new THREE.ObjectLoader();
+      loader.load('scripts/gun.js', function(gun) {
+        console.log(gun);
+        // gun.material.color.set(0x444444);
+        gun.scale.x = 0.2;
+        gun.scale.y = 0.2;
+        gun.scale.z = 0.2;
+        gun.translateZ(-2);
+        gun.translateX(1.8);
+        gun.translateY(-1);
+        gun.rotateY(0.55 * Math.PI);
+        gun.rotateZ(0.02 * Math.PI);
+        camera.add(gun);
+      });
+
+      var light = new THREE.PointLight( 0xffffff, 1, 100 );
+      camera.add(light);
+    }());
 
     var audioLoader = new THREE.AudioLoader();
 
@@ -307,7 +328,7 @@ function gunShoot() {
     var intersect = intersects[i];
     if (intersect.object.parent.target instanceof Zombie) {
       intersect.object.parent.target.shoot(45 * intersect.object.dmgMtpl);
-      // break;
+      break;
     }
 
 	}
